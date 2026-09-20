@@ -1,0 +1,47 @@
+name: Bump casks
+
+# Keeps every cask in the tap on its latest upstream release: livecheck finds the new version,
+# `brew bump-cask-pr` rewrites the version and the checksums (all arches)
+on:
+  schedule:
+    - cron: '0 7 * * 1' # every Monday at 07:00 UTC
+  workflow_dispatch:
+  repository_dispatch:
+    types: [bump]
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash -xeuo pipefail {0}
+
+jobs:
+  bump:
+    runs-on: macos-26
+    steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@fd832223f9f99ebf0244dd20658680e5d4aca049 # 2026.08.03.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up git
+        uses: Homebrew/actions/git-user-config@fd832223f9f99ebf0244dd20658680e5d4aca049 # 2026.08.03.2
+
+      - name: Bump the outdated casks
+        env:
+          TAP: ${{ steps.set-up-homebrew.outputs.tap-name }}
+        run: |
+          brew livecheck --cask --newer-only --full-name --json --tap="$TAP" > outdated.json
+          jq -r '.[] | "\(.cask) \(.version.latest)"' outdated.json | while read -r cask version; do
+            # --write-only keeps it local; bump-cask-pr runs brew audit and brew style --fix itself
+            brew bump-cask-pr --write-only --commit --no-browse --version="$version" "$cask"
+          done
+
+      - name: Push the bumps
+        uses: Homebrew/actions/git-try-push@fd832223f9f99ebf0244dd20658680e5d4aca049 # 2026.08.03.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
+          branch: main

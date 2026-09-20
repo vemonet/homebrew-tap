@@ -1,0 +1,35 @@
+name: CI
+
+# Audits and style-checks every cask in the tap, on pushes and on PRs
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -xeuo pipefail {0}
+
+jobs:
+  tap-syntax:
+    runs-on: macos-26
+    steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@fd832223f9f99ebf0244dd20658680e5d4aca049 # 2026.08.03.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # `brew test-bot --only-tap-syntax` shells out to rubocop, which is slow to install
+      - name: Cache Homebrew Bundler RubyGems
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+          key: rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: rubygems-
+
+      - run: brew test-bot --only-tap-syntax
