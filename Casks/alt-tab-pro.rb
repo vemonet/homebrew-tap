@@ -1,6 +1,6 @@
 cask "alt-tab-pro" do
-  version "11.7.0"
-  sha256 "878d297ea10f530d04c63ba98cd8a90da6bd70d20aeb7bf3b85c3195b678f626"
+  version "11.8.0"
+  sha256 "6e87736b358d931dcf672c33687b28194f6977240a45a8d41683b30e7439404c"
 
   url "https://github.com/vemonet/alt-tab-macos-free/releases/download/v#{version}/AltTab-Pro.zip"
   name "AltTab Pro"
